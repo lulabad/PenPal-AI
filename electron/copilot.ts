@@ -63,7 +63,7 @@ export async function startCopilotSession(
     prompt: "Start the session. Ask me your first question.",
   });
 
-  const content = result?.data.content ?? accumulated;
+  const content = result?.data?.content ?? accumulated;
   return parseTutorResponse(content);
 }
 
@@ -93,7 +93,7 @@ export async function sendMessage(
 
   unsub();
 
-  const content = result?.data.content ?? accumulated;
+  const content = result?.data?.content ?? accumulated;
   return parseTutorResponse(content);
 }
 
@@ -116,27 +116,84 @@ export async function shutdownCopilot(): Promise<void> {
 }
 
 function parseTutorResponse(raw: string): TutorResponse {
-  // Strip markdown code fences if present
-  let cleaned = raw.trim();
-  if (cleaned.startsWith("```")) {
-    cleaned = cleaned.replace(/^```(?:json)?\s*\n?/, "").replace(/\n?```\s*$/, "");
+  const content = raw.trim();
+
+  // Parse section-based format: [SECTION_NAME]...[/SECTION_NAME]
+  const correctedText = extractSection(content, "CORRECTED_TEXT");
+  const encouragement = extractSection(content, "ENCOURAGEMENT");
+  const nextQuestion = extractSection(content, "NEXT_QUESTION");
+  const correctionsRaw = extractSection(content, "CORRECTIONS");
+
+  // If we found at least the NEXT_QUESTION section, treat as valid
+  if (nextQuestion) {
+    return {
+      correctedText,
+      corrections: parseCorrections(correctionsRaw),
+      encouragement,
+      nextQuestion,
+    };
   }
 
+  // Fallback: try JSON parsing for backward compatibility
+  const json = tryParseJson(content);
+  if (json) {
+    return {
+      correctedText: json.correctedText ?? "",
+      corrections: Array.isArray(json.corrections) ? json.corrections : [],
+      encouragement: json.encouragement ?? "",
+      nextQuestion: json.nextQuestion ?? "",
+    };
+  }
+
+  // Last resort: treat the whole response as a conversational message
+  console.warn("[PenPal] Could not parse tutor response, using fallback.");
+  return {
+    correctedText: "",
+    corrections: [],
+    encouragement: "",
+    nextQuestion: raw,
+  };
+}
+
+function extractSection(text: string, name: string): string {
+  const regex = new RegExp(
+    `\\[${name}\\]\\s*([\\s\\S]*?)\\s*\\[/${name}\\]`,
+    "i"
+  );
+  const match = text.match(regex);
+  return match ? match[1].trim() : "";
+}
+
+function parseCorrections(
+  raw: string
+): { original: string; corrected: string; explanation: string }[] {
+  if (!raw) return [];
+
+  const blocks = raw.split(/\n\s*\n/).filter((b) => b.trim());
+  const corrections: { original: string; corrected: string; explanation: string }[] = [];
+
+  for (const block of blocks) {
+    const original = block.match(/Original:\s*(.+)/i)?.[1]?.trim() ?? "";
+    const corrected = block.match(/Corrected:\s*(.+)/i)?.[1]?.trim() ?? "";
+    const explanation = block.match(/Explanation:\s*([\s\S]+)/i)?.[1]?.trim() ?? "";
+    if (original || corrected) {
+      corrections.push({ original, corrected, explanation });
+    }
+  }
+
+  return corrections;
+}
+
+function tryParseJson(text: string): Record<string, any> | null {
   try {
-    const parsed = JSON.parse(cleaned);
-    return {
-      correctedText: parsed.correctedText ?? "",
-      corrections: Array.isArray(parsed.corrections) ? parsed.corrections : [],
-      encouragement: parsed.encouragement ?? "",
-      nextQuestion: parsed.nextQuestion ?? "",
-    };
+    let cleaned = text;
+    if (cleaned.startsWith("```")) {
+      cleaned = cleaned.replace(/^```(?:json)?\s*\n?/, "").replace(/\n?```\s*$/, "");
+    }
+    const obj = JSON.parse(cleaned);
+    if (obj && typeof obj === "object") return obj;
+    return null;
   } catch {
-    // If the model didn't return JSON, wrap it as a plain response
-    return {
-      correctedText: "",
-      corrections: [],
-      encouragement: "",
-      nextQuestion: raw,
-    };
+    return null;
   }
 }
