@@ -296,7 +296,14 @@ body {
 .typing-indicator {
   display: flex;
   gap: 4px;
+  align-items: center;
   padding: 4px 0;
+}
+
+.thinking-label {
+  margin-left: 8px;
+  font-size: 0.85rem;
+  color: var(--text-muted);
 }
 
 .typing-indicator span {

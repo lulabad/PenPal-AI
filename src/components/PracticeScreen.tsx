@@ -121,20 +121,13 @@ export function PracticeScreen({ session, onSessionUpdate, onEnd }: Props) {
           </div>
         ))}
 
-        {loading && streamText && (
-          <div className="turn turn-assistant">
-            <div className="turn-bubble streaming">
-              <p>{streamText}</p>
-            </div>
-          </div>
-        )}
-
-        {loading && !streamText && (
+        {loading && (
           <div className="turn turn-assistant">
             <div className="turn-bubble streaming">
               <span className="typing-indicator">
                 <span></span><span></span><span></span>
               </span>
+              {streamText && <span className="thinking-label">Thinking…</span>}
             </div>
           </div>
         )}
