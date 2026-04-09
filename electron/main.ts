@@ -26,6 +26,7 @@ async function getStore() {
         preferences: {
           explanationLanguage: "English",
           recentTopics: [],
+          theme: "light",
         } as UserPreferences,
       },
     });

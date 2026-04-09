@@ -13,11 +13,31 @@ export default function App() {
   const [preferences, setPreferences] = useState<UserPreferences>({
     explanationLanguage: "English",
     recentTopics: [],
+    theme: "light",
   });
 
   useEffect(() => {
-    window.penpal.getPreferences().then(setPreferences);
+    window.penpal.getPreferences().then((prefs) => {
+      const merged = { ...prefs, theme: prefs.theme ?? "light" };
+      setPreferences(merged);
+      applyTheme(merged.theme);
+    });
   }, []);
+
+  function applyTheme(theme: "light" | "dark") {
+    document.documentElement.setAttribute("data-theme", theme);
+  }
+
+  async function handlePreferencesChange(prefs: UserPreferences) {
+    setPreferences(prefs);
+    applyTheme(prefs.theme);
+    await window.penpal.savePreferences(prefs);
+  }
+
+  function toggleTheme() {
+    const next = preferences.theme === "light" ? "dark" : "light";
+    handlePreferencesChange({ ...preferences, theme: next });
+  }
 
   const handleStartSession = (session: ConversationSession) => {
     setActiveSession(session);
@@ -27,7 +47,11 @@ export default function App() {
   const handleEndSession = () => {
     setActiveSession(null);
     setScreen("home");
-    window.penpal.getPreferences().then(setPreferences);
+    window.penpal.getPreferences().then((prefs) => {
+      const merged = { ...prefs, theme: prefs.theme ?? "light" };
+      setPreferences(merged);
+      applyTheme(merged.theme);
+    });
   };
 
   const handleResumeSession = (session: ConversationSession) => {
@@ -54,6 +78,13 @@ export default function App() {
           >
             History
           </button>
+          <button
+            className="theme-toggle"
+            onClick={toggleTheme}
+            title={preferences.theme === "light" ? "Switch to dark mode" : "Switch to light mode"}
+          >
+            {preferences.theme === "light" ? "🌙" : "☀️"}
+          </button>
         </nav>
       </header>
 
@@ -61,10 +92,7 @@ export default function App() {
         {screen === "home" && (
           <HomeScreen
             preferences={preferences}
-            onPreferencesChange={async (prefs) => {
-              setPreferences(prefs);
-              await window.penpal.savePreferences(prefs);
-            }}
+            onPreferencesChange={handlePreferencesChange}
             onStartSession={handleStartSession}
           />
         )}

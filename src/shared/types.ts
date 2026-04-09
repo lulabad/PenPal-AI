@@ -53,6 +53,7 @@ export interface SessionResult {
 export interface UserPreferences {
   explanationLanguage: string;
   recentTopics: string[];
+  theme: "light" | "dark";
 }
 
 export const TOPICS = [

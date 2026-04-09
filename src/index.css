@@ -8,6 +8,23 @@
 }
 
 :root {
+  --bg: #f5f6fa;
+  --bg-surface: #ffffff;
+  --bg-card: #eef0f6;
+  --bg-input: #e4e7f0;
+  --text: #1a1d27;
+  --text-muted: #6b7280;
+  --accent: #6c63ff;
+  --accent-hover: #5b52e0;
+  --success: #059669;
+  --warning: #d97706;
+  --danger: #ef4444;
+  --border: #d1d5e0;
+  --radius: 12px;
+  --radius-sm: 8px;
+}
+
+[data-theme="dark"] {
   --bg: #0f1117;
   --bg-surface: #1a1d27;
   --bg-card: #232733;
@@ -20,8 +37,6 @@
   --warning: #f5a623;
   --danger: #ef4444;
   --border: #2e3244;
-  --radius: 12px;
-  --radius-sm: 8px;
 }
 
 html,
@@ -573,6 +588,11 @@ body {
   border-radius: var(--radius-sm);
   font-size: 14px;
   margin: 12px 0;
+}
+
+.app-header nav button.theme-toggle {
+  font-size: 16px;
+  padding: 6px 10px;
 }
 
 /* ── Scrollbar ── */
