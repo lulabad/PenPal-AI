@@ -15,6 +15,7 @@ export interface PenPalAPI {
   }>;
   sendMessage: (req: SendMessageRequest) => Promise<TutorResponse>;
   endSession: (sessionId: string) => Promise<void>;
+  resumeSession: (sessionId: string) => Promise<void>;
   getSessions: () => Promise<ConversationSession[]>;
   deleteSession: (sessionId: string) => Promise<void>;
   getPreferences: () => Promise<UserPreferences>;
@@ -23,9 +24,10 @@ export interface PenPalAPI {
 }
 
 const api: PenPalAPI = {
-  startSession: (req) => ipcRenderer.invoke("copilot:start-session", req),
-  sendMessage: (req) => ipcRenderer.invoke("copilot:send-message", req),
-  endSession: (id) => ipcRenderer.invoke("copilot:end-session", id),
+  startSession: (req) => ipcRenderer.invoke("penpal:start-session", req),
+  sendMessage: (req) => ipcRenderer.invoke("penpal:send-message", req),
+  endSession: (id) => ipcRenderer.invoke("penpal:end-session", id),
+  resumeSession: (id) => ipcRenderer.invoke("penpal:resume-session", id),
   getSessions: () => ipcRenderer.invoke("store:get-sessions"),
   deleteSession: (id) => ipcRenderer.invoke("store:delete-session", id),
   getPreferences: () => ipcRenderer.invoke("store:get-preferences"),
@@ -38,8 +40,8 @@ const api: PenPalAPI = {
     ) => {
       callback(chunk);
     };
-    ipcRenderer.on("copilot:stream", handler);
-    return () => ipcRenderer.removeListener("copilot:stream", handler);
+    ipcRenderer.on("penpal:stream", handler);
+    return () => ipcRenderer.removeListener("penpal:stream", handler);
   },
 };
 

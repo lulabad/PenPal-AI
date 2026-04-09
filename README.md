@@ -15,14 +15,14 @@ A desktop app that helps you improve your English writing through AI-powered con
 
 - **Frontend:** React + TypeScript + Vite
 - **Desktop:** Electron
-- **AI Engine:** [GitHub Copilot SDK](https://github.com/github/copilot-sdk) (`@github/copilot-sdk`)
+- **AI Engine:** [Ollama](https://ollama.com) (local, `ollama` npm package)
 - **Persistence:** electron-store (local JSON)
 
 ## Prerequisites
 
 - Node.js 18+
-- A [GitHub Copilot](https://github.com/features/copilot) subscription (or BYOK configuration)
-- Authenticated via `copilot` CLI or a `GITHUB_TOKEN` environment variable
+- [Ollama](https://ollama.com) installed and running (`ollama serve`)
+- A compatible model pulled, e.g. `ollama pull qwen3` (default) or `ollama pull llama3.1:8b`
 
 ## Getting Started
 
@@ -46,7 +46,7 @@ npm run package
 electron/
   main.ts          # Electron main process, IPC handlers, persistence
   preload.ts       # Secure IPC bridge to renderer
-  copilot.ts       # Copilot SDK session management
+  ollama.ts        # Ollama session management and response parsing
   prompts.ts       # System prompt builder for the writing tutor
 src/
   App.tsx          # App shell with screen routing
@@ -62,10 +62,10 @@ src/
 
 ## How It Works
 
-1. The app creates a Copilot SDK session with a system prompt that makes the AI act as a writing tutor
+1. The app starts an Ollama chat session with a system prompt that makes the AI act as a writing tutor
 2. The AI asks a question about the chosen topic
 3. You write your answer in the text box
-4. The AI returns a structured JSON response with:
+4. The AI returns a structured response with:
    - Your corrected text
    - Each correction with an explanation (in your chosen language)
    - Encouragement about what you did well

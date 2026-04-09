@@ -54,6 +54,8 @@ export interface UserPreferences {
   explanationLanguage: string;
   recentTopics: string[];
   theme: "light" | "dark";
+  ollamaModel?: string;
+  ollamaEndpoint?: string;
 }
 
 export const TOPICS = [

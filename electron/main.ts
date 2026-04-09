@@ -2,11 +2,12 @@ import { app, BrowserWindow, ipcMain } from "electron";
 import path from "node:path";
 import { v4 as uuidv4 } from "uuid";
 import {
-  startCopilotSession,
+  startOllamaSession,
   sendMessage,
+  resumeSession,
   endSession,
-  shutdownCopilot,
-} from "./copilot";
+  shutdownOllama,
+} from "./ollama";
 import type {
   StartSessionRequest,
   SendMessageRequest,
@@ -27,6 +28,8 @@ async function getStore() {
           explanationLanguage: "English",
           recentTopics: [],
           theme: "light",
+          ollamaModel: "qwen3:latest",
+          ollamaEndpoint: "http://localhost:11434",
         } as UserPreferences,
       },
     });
@@ -61,21 +64,24 @@ function createWindow() {
 
 function registerIpcHandlers() {
   ipcMain.handle(
-    "copilot:start-session",
+    "penpal:start-session",
     async (_event, req: StartSessionRequest) => {
       const sessionId = uuidv4();
 
-      const firstResponse = await startCopilotSession(
+      const store = await getStore();
+      const prefs: UserPreferences = store.get("preferences");
+
+      const firstResponse = await startOllamaSession(
         sessionId,
         req.topic,
         req.explanationLanguage,
         (chunk) => {
-          mainWindow?.webContents.send("copilot:stream", chunk);
-        }
+          mainWindow?.webContents.send("penpal:stream", chunk);
+        },
+        prefs
       );
 
       // Persist the new session
-      const store = await getStore();
       const sessions: ConversationSession[] = store.get("sessions");
       const now = Date.now();
 
@@ -99,7 +105,6 @@ function registerIpcHandlers() {
       store.set("sessions", sessions);
 
       // Update recent topics
-      const prefs: UserPreferences = store.get("preferences");
       prefs.recentTopics = [
         req.topic,
         ...prefs.recentTopics.filter((t: string) => t !== req.topic),
@@ -111,18 +116,21 @@ function registerIpcHandlers() {
   );
 
   ipcMain.handle(
-    "copilot:send-message",
+    "penpal:send-message",
     async (_event, req: SendMessageRequest) => {
+      const store = await getStore();
+      const prefs: UserPreferences = store.get("preferences");
+
       const tutorResponse = await sendMessage(
         req.sessionId,
         req.message,
         (chunk) => {
-          mainWindow?.webContents.send("copilot:stream", chunk);
-        }
+          mainWindow?.webContents.send("penpal:stream", chunk);
+        },
+        prefs
       );
 
       // Persist turns
-      const store = await getStore();
       const sessions: ConversationSession[] = store.get("sessions");
       const session = sessions.find((s) => s.id === req.sessionId);
       if (session) {
@@ -149,8 +157,15 @@ function registerIpcHandlers() {
     }
   );
 
-  ipcMain.handle("copilot:end-session", async (_event, sessionId: string) => {
+  ipcMain.handle("penpal:end-session", async (_event, sessionId: string) => {
     await endSession(sessionId);
+  });
+
+  ipcMain.handle("penpal:resume-session", async (_event, sessionId: string) => {
+    const store = await getStore();
+    const sessions: ConversationSession[] = store.get("sessions");
+    const session = sessions.find((s) => s.id === sessionId);
+    if (session) resumeSession(session);
   });
 
   ipcMain.handle("store:get-sessions", async () => {
@@ -190,7 +205,7 @@ app.whenReady().then(() => {
 });
 
 app.on("window-all-closed", async () => {
-  await shutdownCopilot();
+  await shutdownOllama();
   app.quit();
 });
 

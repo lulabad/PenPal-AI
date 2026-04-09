@@ -54,7 +54,8 @@ export default function App() {
     });
   };
 
-  const handleResumeSession = (session: ConversationSession) => {
+  const handleResumeSession = async (session: ConversationSession) => {
+    await window.penpal.resumeSession(session.id);
     setActiveSession(session);
     setScreen("practice");
   };
