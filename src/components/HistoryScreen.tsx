@@ -9,6 +9,7 @@ interface Props {
 export function HistoryScreen({ onResume, onBack }: Props) {
   const [sessions, setSessions] = useState<ConversationSession[]>([]);
   const [loading, setLoading] = useState(true);
+  const [confirmingId, setConfirmingId] = useState<string | null>(null);
 
   useEffect(() => {
     window.penpal
@@ -20,6 +21,7 @@ export function HistoryScreen({ onResume, onBack }: Props) {
   const handleDelete = async (id: string) => {
     await window.penpal.deleteSession(id);
     setSessions((prev) => prev.filter((s) => s.id !== id));
+    setConfirmingId(null);
   };
 
   if (loading) {
@@ -52,13 +54,33 @@ export function HistoryScreen({ onResume, onBack }: Props) {
               </span>
             </div>
             <div className="history-actions">
-              <button onClick={() => onResume(session)}>Resume</button>
-              <button
-                className="delete-btn"
-                onClick={() => handleDelete(session.id)}
-              >
-                Delete
-              </button>
+              {confirmingId === session.id ? (
+                <>
+                  <span className="delete-confirm-label">Delete this session?</span>
+                  <button
+                    className="confirm-delete-btn"
+                    onClick={() => handleDelete(session.id)}
+                  >
+                    Confirm
+                  </button>
+                  <button
+                    className="cancel-btn"
+                    onClick={() => setConfirmingId(null)}
+                  >
+                    Cancel
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button onClick={() => onResume(session)}>Resume</button>
+                  <button
+                    className="delete-btn"
+                    onClick={() => setConfirmingId(session.id)}
+                  >
+                    Delete
+                  </button>
+                </>
+              )}
             </div>
           </div>
         ))}

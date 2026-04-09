@@ -579,6 +579,35 @@ body {
   background: rgba(239, 68, 68, 0.08);
 }
 
+.delete-confirm-label {
+  font-size: 13px;
+  color: var(--text-muted);
+  align-self: center;
+  white-space: nowrap;
+}
+
+.history-actions .confirm-delete-btn {
+  background: var(--danger);
+  color: #fff;
+  border: none;
+}
+
+.history-actions .confirm-delete-btn:hover {
+  background: #dc2626;
+}
+
+.history-actions .cancel-btn {
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+}
+
+.history-actions .cancel-btn:hover {
+  background: var(--bg-input);
+  color: var(--text);
+  border-color: var(--text-muted);
+}
+
 /* ── Error banner ── */
 .error-banner {
   background: rgba(239, 68, 68, 0.1);
