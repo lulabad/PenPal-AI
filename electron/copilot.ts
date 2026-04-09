@@ -1,0 +1,128 @@
+import { CopilotClient, approveAll } from "@github/copilot-sdk";
+import type { TutorResponse, StreamChunk } from "../src/shared/types";
+import { buildSystemPrompt } from "./prompts";
+
+let client: CopilotClient | null = null;
+
+const activeSessions = new Map<
+  string,
+  { copilotSession: Awaited<ReturnType<CopilotClient["createSession"]>> }
+>();
+
+async function getClient(): Promise<CopilotClient> {
+  if (!client) {
+    client = new CopilotClient({ logLevel: "warning" });
+    await client.start();
+  }
+  return client;
+}
+
+export async function startCopilotSession(
+  sessionId: string,
+  topic: string,
+  explanationLanguage: string,
+  onStream?: (chunk: StreamChunk) => void
+): Promise<TutorResponse> {
+  const c = await getClient();
+
+  const systemPrompt = buildSystemPrompt(topic, explanationLanguage);
+
+  const copilotSession = await c.createSession({
+    streaming: true,
+    onPermissionRequest: approveAll,
+    systemMessage: {
+      mode: "replace",
+      content: systemPrompt,
+    },
+  });
+
+  activeSessions.set(sessionId, { copilotSession });
+
+  let accumulated = "";
+
+  copilotSession.on("assistant.message_delta", (event) => {
+    accumulated += event.data.deltaContent;
+    onStream?.({ sessionId, delta: event.data.deltaContent });
+  });
+
+  const result = await copilotSession.sendAndWait({
+    prompt: "Start the session. Ask me your first question.",
+  });
+
+  const content = result?.data.content ?? accumulated;
+  return parseTutorResponse(content);
+}
+
+export async function sendMessage(
+  sessionId: string,
+  message: string,
+  onStream?: (chunk: StreamChunk) => void
+): Promise<TutorResponse> {
+  const entry = activeSessions.get(sessionId);
+  if (!entry) {
+    throw new Error(`No active session: ${sessionId}`);
+  }
+
+  let accumulated = "";
+
+  const unsub = entry.copilotSession.on(
+    "assistant.message_delta",
+    (event) => {
+      accumulated += event.data.deltaContent;
+      onStream?.({ sessionId, delta: event.data.deltaContent });
+    }
+  );
+
+  const result = await entry.copilotSession.sendAndWait({
+    prompt: message,
+  });
+
+  unsub();
+
+  const content = result?.data.content ?? accumulated;
+  return parseTutorResponse(content);
+}
+
+export async function endSession(sessionId: string): Promise<void> {
+  const entry = activeSessions.get(sessionId);
+  if (entry) {
+    await entry.copilotSession.disconnect();
+    activeSessions.delete(sessionId);
+  }
+}
+
+export async function shutdownCopilot(): Promise<void> {
+  for (const [id] of activeSessions) {
+    await endSession(id);
+  }
+  if (client) {
+    await client.stop();
+    client = null;
+  }
+}
+
+function parseTutorResponse(raw: string): TutorResponse {
+  // Strip markdown code fences if present
+  let cleaned = raw.trim();
+  if (cleaned.startsWith("```")) {
+    cleaned = cleaned.replace(/^```(?:json)?\s*\n?/, "").replace(/\n?```\s*$/, "");
+  }
+
+  try {
+    const parsed = JSON.parse(cleaned);
+    return {
+      correctedText: parsed.correctedText ?? "",
+      corrections: Array.isArray(parsed.corrections) ? parsed.corrections : [],
+      encouragement: parsed.encouragement ?? "",
+      nextQuestion: parsed.nextQuestion ?? "",
+    };
+  } catch {
+    // If the model didn't return JSON, wrap it as a plain response
+    return {
+      correctedText: "",
+      corrections: [],
+      encouragement: "",
+      nextQuestion: raw,
+    };
+  }
+}
