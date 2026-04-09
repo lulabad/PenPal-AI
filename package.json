@@ -6,9 +6,11 @@
   "main": "dist-electron/main.js",
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build",
+    "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "package": "npm run build && electron-builder --config electron-builder.yml",
+    "package:win": "npm run build && electron-builder --win --config electron-builder.yml"
   },
   "dependencies": {
     "@github/copilot-sdk": "latest",
