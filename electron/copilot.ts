@@ -42,6 +42,7 @@ export async function startCopilotSession(
   const systemPrompt = buildSystemPrompt(topic, explanationLanguage);
 
   const copilotSession = await c.createSession({
+    model: "gpt-5-mini",
     streaming: true,
     onPermissionRequest: approveAll,
     systemMessage: {
