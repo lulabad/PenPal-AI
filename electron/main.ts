@@ -31,6 +31,13 @@ async function getStore() {
           ollamaModel: "qwen3:latest",
           ollamaEndpoint: "http://localhost:11434",
         } as UserPreferences,
+        windowBounds: { width: 1100, height: 780 } as {
+          x?: number;
+          y?: number;
+          width: number;
+          height: number;
+          isMaximized?: boolean;
+        },
       },
     });
   }
@@ -46,10 +53,22 @@ function resolveIcon() {
     : path.join(__dirname, "..", "build", iconFile);
 }
 
-function createWindow() {
+async function createWindow() {
+  const store = await getStore();
+  const bounds = store.get("windowBounds") as {
+    x?: number;
+    y?: number;
+    width: number;
+    height: number;
+    isMaximized?: boolean;
+  };
+
   mainWindow = new BrowserWindow({
-    width: 1100,
-    height: 780,
+    ...(bounds.x !== undefined && bounds.y !== undefined
+      ? { x: bounds.x, y: bounds.y }
+      : {}),
+    width: bounds.width,
+    height: bounds.height,
     minWidth: 700,
     minHeight: 500,
     title: "PenPal AI",
@@ -60,6 +79,26 @@ function createWindow() {
       nodeIntegration: false,
     },
   });
+
+  if (bounds.isMaximized) {
+    mainWindow.maximize();
+  }
+
+  const saveBounds = () => {
+    if (!mainWindow) return;
+    const isMaximized = mainWindow.isMaximized();
+    // Save the normal (non-maximized) bounds so restoring works correctly
+    const normal = isMaximized
+      ? (store.get("windowBounds") as any)
+      : mainWindow.getBounds();
+    store.set("windowBounds", { ...normal, isMaximized });
+  };
+
+  mainWindow.on("resized", saveBounds);
+  mainWindow.on("moved", saveBounds);
+  mainWindow.on("maximize", saveBounds);
+  mainWindow.on("unmaximize", saveBounds);
+  mainWindow.on("close", saveBounds);
 
   if (process.env.VITE_DEV_SERVER_URL) {
     mainWindow.loadURL(process.env.VITE_DEV_SERVER_URL);
@@ -207,9 +246,9 @@ function registerIpcHandlers() {
 
 // ── App lifecycle ──
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
   registerIpcHandlers();
-  createWindow();
+  await createWindow();
 });
 
 app.on("window-all-closed", async () => {
@@ -217,8 +256,8 @@ app.on("window-all-closed", async () => {
   app.quit();
 });
 
-app.on("activate", () => {
+app.on("activate", async () => {
   if (BrowserWindow.getAllWindows().length === 0) {
-    createWindow();
+    await createWindow();
   }
 });
