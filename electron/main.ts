@@ -39,6 +39,13 @@ async function getStore() {
 
 let mainWindow: BrowserWindow | null = null;
 
+function resolveIcon() {
+  const iconFile = process.platform === "win32" ? "icon.ico" : "icon.png";
+  return app.isPackaged
+    ? path.join(process.resourcesPath, iconFile)
+    : path.join(__dirname, "..", "build", iconFile);
+}
+
 function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1100,
@@ -46,6 +53,7 @@ function createWindow() {
     minWidth: 700,
     minHeight: 500,
     title: "PenPal AI",
+    icon: resolveIcon(),
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),
       contextIsolation: true,
