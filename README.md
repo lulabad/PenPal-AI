@@ -1,6 +1,24 @@
+<p align="center">
+  <img src="build/icon.png" width="128" alt="PenPal AI icon">
+</p>
+
 # PenPal AI — English Writing Coach
 
-A desktop app that helps you improve your English writing through AI-powered conversations. The AI asks you questions, you write answers, and it returns corrections with explanations.
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+
+A desktop app that helps you improve your English writing through AI-powered conversations. The AI asks you questions, you write answers, and it returns corrections with explanations. Runs entirely on your machine via [Ollama](https://ollama.com) — no cloud, no account, no data leaves your computer.
+
+> **Note:** This entire project — code, UI, and icon — was built with AI.
+
+<p align="center">
+  <img src="docs/conversation.png" width="700" alt="PenPal AI — writing practice with corrections and explanations">
+</p>
+
+<p align="center">
+  <img src="docs/home_screen.png" width="420" alt="Home screen (dark theme)">
+  &nbsp;
+  <img src="docs/home_screen_light.png" width="420" alt="Home screen (light theme)">
+</p>
 
 ## Features
 
@@ -49,6 +67,7 @@ electron/
   ollama.ts        # Ollama session management and response parsing
   prompts.ts       # System prompt builder for the writing tutor
 src/
+  main.tsx         # React entry point
   App.tsx          # App shell with screen routing
   components/
     HomeScreen.tsx     # Topic selection and settings
@@ -58,6 +77,7 @@ src/
   shared/
     types.ts       # Shared TypeScript types (IPC contracts)
   index.css        # Global styles (dark theme)
+  global.d.ts      # Ambient type declarations
 ```
 
 ## How It Works
@@ -71,6 +91,10 @@ src/
    - Encouragement about what you did well
    - A follow-up question to continue the conversation
 
+## Contributing
+
+Found a bug or have a feature idea? [Open an issue](../../issues) — contributions and feedback are welcome!
+
 ## License
 
-MIT
+[MIT](LICENSE)
