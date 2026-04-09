@@ -1,6 +1,7 @@
 import { CopilotClient, approveAll } from "@github/copilot-sdk";
 import type { TutorResponse, StreamChunk } from "../src/shared/types";
 import { buildSystemPrompt } from "./prompts";
+import { existsSync } from "fs";
 
 let client: CopilotClient | null = null;
 
@@ -9,10 +10,23 @@ const activeSessions = new Map<
   { copilotSession: Awaited<ReturnType<CopilotClient["createSession"]>> }
 >();
 
+function findCopilotCli(): string | undefined {
+  const candidates = [
+    // WinGet install location
+    `${process.env.LOCALAPPDATA}\\Microsoft\\WinGet\\Packages\\GitHub.Copilot_Microsoft.Winget.Source_8wekyb3d8bbwe\\copilot.exe`,
+    // npm global install
+    `${process.env.APPDATA}\\npm\\copilot.cmd`,
+  ];
+  return candidates.find((p) => existsSync(p));
+}
+
 async function getClient(): Promise<CopilotClient> {
   if (!client) {
-    client = new CopilotClient({ logLevel: "warning" });
-    await client.start();
+    const cliPath = findCopilotCli();
+    client = new CopilotClient({
+      logLevel: "warning",
+      ...(cliPath ? { cliPath } : {}),
+    });
   }
   return client;
 }
