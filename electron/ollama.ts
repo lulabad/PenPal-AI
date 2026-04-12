@@ -183,18 +183,41 @@ function parseCorrections(
 ): { original: string; corrected: string; explanation: string }[] {
   if (!raw) return [];
 
-  const blocks = raw.split(/\n\s*\n/).filter((b) => b.trim());
   const corrections: { original: string; corrected: string; explanation: string }[] = [];
+  let current: { original: string; corrected: string; explanation: string } | null = null;
+  let inExplanation = false;
 
-  for (const block of blocks) {
-    const original = block.match(/Original:\s*(.+)/i)?.[1]?.trim() ?? "";
-    const corrected = block.match(/Corrected:\s*(.+)/i)?.[1]?.trim() ?? "";
-    const explanation = block.match(/Explanation:\s*([\s\S]+)/i)?.[1]?.trim() ?? "";
-    if (original || corrected) {
-      corrections.push({ original, corrected, explanation });
+  const commit = () => {
+    if (current && (current.original || current.corrected)) corrections.push(current);
+  };
+
+  for (const line of raw.split("\n")) {
+    const trimmed = line.trim();
+
+    // A section-tag line (e.g. [/CORRECTIONS] or [ENCOURAGEMENT]) means we've left
+    // the corrections block — stop processing entirely.
+    if (/^\[[\w/]/.test(trimmed)) break;
+
+    const originalMatch = trimmed.match(/^Original:\s*(.+)/i);
+    const correctedMatch = trimmed.match(/^Corrected:\s*(.+)/i);
+    const explanationMatch = trimmed.match(/^Explanation:\s*(.*)/i);
+
+    if (originalMatch) {
+      commit();
+      current = { original: originalMatch[1].trim(), corrected: "", explanation: "" };
+      inExplanation = false;
+    } else if (correctedMatch && current) {
+      current.corrected = correctedMatch[1].trim();
+      inExplanation = false;
+    } else if (explanationMatch && current) {
+      current.explanation = explanationMatch[1].trim();
+      inExplanation = true;
+    } else if (inExplanation && current && trimmed) {
+      current.explanation += " " + trimmed;
     }
   }
 
+  commit();
   return corrections;
 }
 
