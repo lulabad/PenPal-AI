@@ -1,6 +1,6 @@
 {
   "name": "penpal-ai",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "private": true,
   "description": "Desktop English writing coach powered by Ollama",
   "main": "dist-electron/main.js",
