@@ -80,7 +80,7 @@ export async function sendMessage(
 
   entry.messages.push({ role: "assistant", content: accumulated });
 
-  return parseTutorResponse(accumulated);
+  return parseTutorResponse(accumulated, message);
 }
 
 export function resumeSession(session: ConversationSession): void {
@@ -123,11 +123,11 @@ export async function shutdownOllama(): Promise<void> {
   ollamaClient = null;
 }
 
-function parseTutorResponse(raw: string): TutorResponse {
+function parseTutorResponse(raw: string, userMessage?: string): TutorResponse {
   // Strip <think>…</think> blocks emitted by reasoning models (e.g. deepseek-r1)
   const content = raw.replace(/<think>[\s\S]*?<\/think>/gi, "").trim();
 
-  const correctedText = extractSection(content, "CORRECTED_TEXT");
+  const correctedText = sanitizeCorrectedText(extractSection(content, "CORRECTED_TEXT"));
   const encouragement = extractSection(content, "ENCOURAGEMENT");
   const nextQuestion = extractSection(content, "NEXT_QUESTION");
   const correctionsRaw = extractSection(content, "CORRECTIONS");
@@ -135,7 +135,7 @@ function parseTutorResponse(raw: string): TutorResponse {
   if (nextQuestion) {
     return {
       correctedText,
-      corrections: parseCorrections(correctionsRaw),
+      corrections: filterSpuriousCorrections(parseCorrections(correctionsRaw), userMessage),
       encouragement,
       nextQuestion,
     };
@@ -145,8 +145,11 @@ function parseTutorResponse(raw: string): TutorResponse {
   const json = tryParseJson(content);
   if (json) {
     return {
-      correctedText: json.correctedText ?? "",
-      corrections: Array.isArray(json.corrections) ? json.corrections : [],
+      correctedText: sanitizeCorrectedText(json.correctedText ?? ""),
+      corrections: filterSpuriousCorrections(
+        Array.isArray(json.corrections) ? json.corrections : [],
+        userMessage
+      ),
       encouragement: json.encouragement ?? "",
       nextQuestion: json.nextQuestion ?? "",
     };
@@ -193,6 +196,40 @@ function parseCorrections(
   }
 
   return corrections;
+}
+
+function filterSpuriousCorrections(
+  corrections: { original: string; corrected: string; explanation: string }[],
+  userMessage?: string
+): { original: string; corrected: string; explanation: string }[] {
+  return corrections.filter((c) => {
+    const orig = c.original.trim();
+    const corr = c.corrected.trim();
+
+    // Drop no-op corrections
+    if (orig === corr) return false;
+
+    // Drop corrections whose only change is appending terminal punctuation that
+    // the user's original message already contained at the same position.
+    const terminalPunct = /[.!?]$/;
+    const corrAddsOnlyPunct =
+      terminalPunct.test(corr) &&
+      !terminalPunct.test(orig) &&
+      corr.slice(0, -1) === orig;
+
+    if (corrAddsOnlyPunct && userMessage) {
+      const addedPunct = corr.slice(-1);
+      if (userMessage.includes(orig + addedPunct)) return false;
+    }
+
+    return true;
+  });
+}
+
+function sanitizeCorrectedText(text: string): string {
+  // Collapse doubled (or more) terminal punctuation produced by the model
+  // blindly appending a period to text that already ended with one.
+  return text.replace(/([.!?])\1+/g, "$1");
 }
 
 function tryParseJson(text: string): Record<string, any> | null {
