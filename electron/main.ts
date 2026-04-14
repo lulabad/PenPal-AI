@@ -230,6 +230,19 @@ function registerIpcHandlers() {
     await endSession(sessionId);
   });
 
+  ipcMain.handle(
+    "store:rename-session",
+    async (_event, sessionId: string, title: string) => {
+      const store = await getStore();
+      const sessions: ConversationSession[] = store.get("sessions");
+      const session = sessions.find((s) => s.id === sessionId);
+      if (session) {
+        session.title = title;
+        store.set("sessions", sessions);
+      }
+    }
+  );
+
   ipcMain.handle("store:get-preferences", async () => {
     const store = await getStore();
     return store.get("preferences") as UserPreferences;

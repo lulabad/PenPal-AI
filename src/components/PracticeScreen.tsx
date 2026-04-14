@@ -16,8 +16,18 @@ export function PracticeScreen({ session, onSessionUpdate, onEnd }: Props) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [streamText, setStreamText] = useState("");
+  const [editingTitle, setEditingTitle] = useState(false);
+  const [editTitleValue, setEditTitleValue] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const titleInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (editingTitle) {
+      titleInputRef.current?.focus();
+      titleInputRef.current?.select();
+    }
+  }, [editingTitle]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -91,11 +101,55 @@ export function PracticeScreen({ session, onSessionUpdate, onEnd }: Props) {
     onEnd();
   };
 
+  const startTitleEdit = () => {
+    setEditTitleValue(session.title || session.topic);
+    setEditingTitle(true);
+  };
+
+  const commitTitleEdit = async () => {
+    if (!editingTitle) return;
+    const trimmed = editTitleValue.trim();
+    if (trimmed) {
+      await window.penpal.renameSession(session.id, trimmed);
+      onSessionUpdate({ ...session, title: trimmed });
+    }
+    setEditingTitle(false);
+  };
+
+  const handleTitleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      commitTitleEdit();
+    } else if (e.key === "Escape") {
+      setEditingTitle(false);
+    }
+  };
+
   return (
     <div className="practice-screen">
       <div className="practice-header">
         <div>
-          <h2>{session.topic}</h2>
+          {editingTitle ? (
+            <input
+              ref={titleInputRef}
+              className="practice-title-input"
+              value={editTitleValue}
+              onChange={(e) => setEditTitleValue(e.target.value)}
+              onKeyDown={handleTitleKeyDown}
+              onBlur={commitTitleEdit}
+            />
+          ) : (
+            <h2 className="practice-title">
+              {session.title || session.topic}
+              <button
+                className="rename-btn"
+                onClick={startTitleEdit}
+                title="Rename session"
+              >
+                ✏️
+              </button>
+            </h2>
+          )}
           <span className="practice-meta">
             Explanations in {session.explanationLanguage}
           </span>

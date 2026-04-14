@@ -24,6 +24,7 @@ export interface ConversationTurn {
 export interface ConversationSession {
   id: string;
   topic: string;
+  title?: string;
   explanationLanguage: string;
   turns: ConversationTurn[];
   createdAt: number;

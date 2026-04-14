@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import type { ConversationSession } from "../shared/types";
 
 interface Props {
@@ -10,6 +10,9 @@ export function HistoryScreen({ onResume, onBack }: Props) {
   const [sessions, setSessions] = useState<ConversationSession[]>([]);
   const [loading, setLoading] = useState(true);
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editValue, setEditValue] = useState("");
+  const editInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     window.penpal
@@ -18,10 +21,47 @@ export function HistoryScreen({ onResume, onBack }: Props) {
       .finally(() => setLoading(false));
   }, []);
 
+  useEffect(() => {
+    if (editingId) {
+      editInputRef.current?.focus();
+      editInputRef.current?.select();
+    }
+  }, [editingId]);
+
   const handleDelete = async (id: string) => {
     await window.penpal.deleteSession(id);
     setSessions((prev) => prev.filter((s) => s.id !== id));
     setConfirmingId(null);
+  };
+
+  const startRename = (session: ConversationSession) => {
+    setEditingId(session.id);
+    setEditValue(session.title || session.topic);
+  };
+
+  const commitRename = async () => {
+    if (!editingId) return;
+    const trimmed = editValue.trim();
+    if (trimmed) {
+      await window.penpal.renameSession(editingId, trimmed);
+      setSessions((prev) =>
+        prev.map((s) => (s.id === editingId ? { ...s, title: trimmed } : s))
+      );
+    }
+    setEditingId(null);
+  };
+
+  const cancelRename = () => {
+    setEditingId(null);
+  };
+
+  const handleRenameKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      commitRename();
+    } else if (e.key === "Escape") {
+      cancelRename();
+    }
   };
 
   if (loading) {
@@ -47,7 +87,27 @@ export function HistoryScreen({ onResume, onBack }: Props) {
         {sessions.map((session) => (
           <div key={session.id} className="history-card">
             <div className="history-info">
-              <h3>{session.topic}</h3>
+              {editingId === session.id ? (
+                <input
+                  ref={editInputRef}
+                  className="rename-input"
+                  value={editValue}
+                  onChange={(e) => setEditValue(e.target.value)}
+                  onKeyDown={handleRenameKeyDown}
+                  onBlur={commitRename}
+                />
+              ) : (
+                <h3>
+                  {session.title || session.topic}
+                  <button
+                    className="rename-btn"
+                    onClick={() => startRename(session)}
+                    title="Rename session"
+                  >
+                    ✏️
+                  </button>
+                </h3>
+              )}
               <span className="history-meta">
                 {session.turns.length} turns ·{" "}
                 {new Date(session.updatedAt).toLocaleDateString()}
