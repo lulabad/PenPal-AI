@@ -243,6 +243,33 @@ body {
   font-size: 20px;
 }
 
+.practice-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.practice-title .rename-btn {
+  opacity: 0;
+}
+
+.practice-title:hover .rename-btn {
+  opacity: 0.6;
+}
+
+.practice-title-input {
+  font-size: 20px;
+  font-weight: 700;
+  font-family: inherit;
+  color: var(--text);
+  background: var(--bg-input);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-sm);
+  padding: 2px 8px;
+  width: 100%;
+  outline: none;
+}
+
 .practice-meta {
   font-size: 13px;
   color: var(--text-muted);
@@ -606,6 +633,46 @@ body {
   background: var(--bg-input);
   color: var(--text);
   border-color: var(--text-muted);
+}
+
+/* ── Rename UI ── */
+.history-info h3 {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.rename-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  padding: 2px 4px;
+  border-radius: 4px;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.history-card:hover .rename-btn {
+  opacity: 0.6;
+}
+
+.rename-btn:hover {
+  opacity: 1 !important;
+  background: var(--bg-input);
+}
+
+.rename-input {
+  font-size: 15px;
+  font-weight: 600;
+  font-family: inherit;
+  color: var(--text);
+  background: var(--bg-input);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-sm);
+  padding: 4px 8px;
+  width: 100%;
+  outline: none;
 }
 
 /* ── Error banner ── */

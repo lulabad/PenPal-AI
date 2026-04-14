@@ -18,6 +18,7 @@ export interface PenPalAPI {
   resumeSession: (sessionId: string) => Promise<void>;
   getSessions: () => Promise<ConversationSession[]>;
   deleteSession: (sessionId: string) => Promise<void>;
+  renameSession: (sessionId: string, title: string) => Promise<void>;
   getPreferences: () => Promise<UserPreferences>;
   savePreferences: (prefs: UserPreferences) => Promise<void>;
   onStream: (callback: (chunk: StreamChunk) => void) => () => void;
@@ -30,6 +31,8 @@ const api: PenPalAPI = {
   resumeSession: (id) => ipcRenderer.invoke("penpal:resume-session", id),
   getSessions: () => ipcRenderer.invoke("store:get-sessions"),
   deleteSession: (id) => ipcRenderer.invoke("store:delete-session", id),
+  renameSession: (id, title) =>
+    ipcRenderer.invoke("store:rename-session", id, title),
   getPreferences: () => ipcRenderer.invoke("store:get-preferences"),
   savePreferences: (prefs) =>
     ipcRenderer.invoke("store:save-preferences", prefs),
