@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain } from "electron";
+import { app, BrowserWindow, ipcMain, Menu } from "electron";
 import path from "node:path";
 import { v4 as uuidv4 } from "uuid";
 import {
@@ -257,9 +257,23 @@ function registerIpcHandlers() {
   );
 }
 
+// ── Menu ──
+
+function buildAppMenu(): Menu | null {
+  if (process.platform === "darwin") {
+    return Menu.buildFromTemplate([
+      { role: "appMenu" },
+      { role: "editMenu" },
+      { role: "windowMenu" },
+    ]);
+  }
+  return null;
+}
+
 // ── App lifecycle ──
 
 app.whenReady().then(async () => {
+  Menu.setApplicationMenu(buildAppMenu());
   registerIpcHandlers();
   await createWindow();
 });
