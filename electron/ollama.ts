@@ -1,7 +1,7 @@
 import { Ollama } from "ollama";
 import type { Message } from "ollama";
 import type { TutorResponse, StreamChunk, UserPreferences, ConversationSession } from "../src/shared/types";
-import { buildSystemPrompt } from "./prompts";
+import { buildSystemPrompt, buildFirstUserMessage } from "./prompts";
 
 const DEFAULT_MODEL = "qwen3:latest";
 const DEFAULT_ENDPOINT = "http://localhost:11434";
@@ -32,7 +32,7 @@ export async function startOllamaSession(
 
   const messages: Message[] = [
     { role: "system", content: systemPrompt },
-    { role: "user", content: "Start the session. Ask me your first question." },
+    { role: "user", content: buildFirstUserMessage(topic) },
   ];
 
   let accumulated = "";
