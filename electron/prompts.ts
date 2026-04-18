@@ -60,7 +60,9 @@ The corrected text, next question, and your questions must always be in English.
 
 ## First Message
 
-For your very first message (when the user hasn't written anything yet), respond with:
+For your very first message (when the user hasn't written anything yet), respond with the exact section structure below. You MUST use the section markers exactly as shown.
+
+Avoid generic stock openers. Choose a specific, fresh angle for this session — the user's message will suggest an approach to follow. Your opening question should feel unique, natural, and encourage the user to write multiple sentences.
 
 [CORRECTED_TEXT]
 [/CORRECTED_TEXT]
@@ -69,11 +71,42 @@ For your very first message (when the user hasn't written anything yet), respond
 [/CORRECTIONS]
 
 [ENCOURAGEMENT]
-Welcome! Let's practice your English writing together.
+A warm, brief welcome to the session.
 [/ENCOURAGEMENT]
 
 [NEXT_QUESTION]
-<your opening question about ${topic}>
+A creative, specific opening question about "${topic}" following the angle suggested in the user's message.
 [/NEXT_QUESTION]
 `;
+}
+
+const OPENER_ANGLES = [
+  "a favourite memory or personal experience",
+  "a hypothetical or \"what if\" scenario",
+  "a comparison between two things",
+  "a strong opinion or preference",
+  "something surprising or unusual",
+  "a recent experience or something that happened lately",
+  "a piece of advice they would give someone",
+  "a childhood memory or how things used to be",
+  "a wish or dream for the future",
+  "something they find funny or entertaining",
+] as const;
+
+const OPENER_TEMPLATES = [
+  (topic: string, angle: string) =>
+    `Start the session about "${topic}". Ask me about ${angle}.`,
+  (topic: string, angle: string) =>
+    `Let's begin! Ask an opening question about "${topic}" — try focusing on ${angle}.`,
+  (topic: string, angle: string) =>
+    `Kick off our "${topic}" session with a question that invites me to share ${angle}.`,
+  (topic: string, angle: string) =>
+    `Open our conversation on "${topic}". Frame your question around ${angle}.`,
+] as const;
+
+export function buildFirstUserMessage(topic: string): string {
+  const angle = OPENER_ANGLES[Math.floor(Math.random() * OPENER_ANGLES.length)];
+  const template =
+    OPENER_TEMPLATES[Math.floor(Math.random() * OPENER_TEMPLATES.length)];
+  return template(topic, angle);
 }
